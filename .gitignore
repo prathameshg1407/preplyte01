@@ -1,0 +1,14 @@
+# Node/NestJS/Next.js
+node_modules/
+dist/
+build/
+.env
+*.log
+
+# Prisma migrations (optional, if you don’t want to commit SQL)
+prisma/migrations/
+
+# Secrets / credentials
+backend/google-service-account.json
+backend/placementprep-466201-211e5ccd283f.json
+frontend/placementprep-466201-211e5ccd283f.json

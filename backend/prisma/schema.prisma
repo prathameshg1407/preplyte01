@@ -1,0 +1,870 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+
+  relationMode = "foreignKeys"
+}
+
+model User {
+  id                          String                       @id @default(cuid())
+  email                       String                       @unique
+  hashedPassword              String?
+  role                        Role                         @default(STUDENT)
+  status                      UserStatus                   @default(PENDING_PROFILE_COMPLETION)
+  institutionId               Int?
+  createdAt                   DateTime                     @default(now())
+  updatedAt                   DateTime                     @updatedAt
+  lastLoginAt                 DateTime?
+  aiInterviewFeedbacks        AiInterviewFeedback[]
+  aiInterviewSessions         AiInterviewSession[]
+  aptitudeResponses           AptitudeResponse[]
+  hackathonRegistrations      HackathonRegistration[]
+  internshipApplications      InternshipApplication[]
+  jobApplications             JobApplication[]
+  machineTestSubmissions      MachineTestSubmission[]
+  machineTests                MachineTest[]
+  profile                     Profile?
+  resumes                     Resume[]
+  sessions                    Session[]
+  socialAccounts              SocialAccount[]
+  topicPerformance            UserTopicPerformance[]
+  institution                 Institution?                 @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  mockDriveRegistrations      MockDriveRegistration[]
+  mockDriveAttempts           MockDriveAttempt[]
+  mockDriveResults            MockDriveResult[]
+  mockDriveRankings           MockDriveRanking[]
+  mockDriveProblemSubmissions MockDriveProblemSubmission[]
+
+  @@index([institutionId, role, status])
+  @@index([email, status])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  sessionToken String   @unique
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("sessions")
+}
+
+model SocialAccount {
+  id         String   @id @default(cuid())
+  provider   String
+  providerId String
+  userId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+  @@map("social_accounts")
+}
+
+model Profile {
+  userId            String   @id
+  fullName          String
+  graduationYear    Int?
+  profileImageUrl   String?
+  linkedinUrl       String?
+  githubUrl         String?
+  websiteUrl        String?
+  sscPercentage     Decimal? @db.Decimal(5, 2)
+  hscPercentage     Decimal? @db.Decimal(5, 2)
+  diplomaPercentage Decimal? @db.Decimal(5, 2)
+  degreeSem1Cgpa    Decimal? @db.Decimal(5, 2)
+  degreeSem2Cgpa    Decimal? @db.Decimal(5, 2)
+  degreeSem3Cgpa    Decimal? @db.Decimal(5, 2)
+  degreeSem4Cgpa    Decimal? @db.Decimal(5, 2)
+  degreeSem5Cgpa    Decimal? @db.Decimal(5, 2)
+  degreeSem6Cgpa    Decimal? @db.Decimal(5, 2)
+  degreeSem7Cgpa    Decimal? @db.Decimal(5, 2)
+  degreeSem8Cgpa    Decimal? @db.Decimal(5, 2)
+  averageCgpa       Decimal? @db.Decimal(5, 2)
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills            Tag[]    @relation("ProfileSkills")
+
+  @@index([graduationYear, averageCgpa])
+  @@map("profiles")
+}
+
+model Institution {
+  id                      Int                      @id @default(autoincrement())
+  name                    String
+  domain                  String                   @unique
+  logoUrl                 String?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  aptitudeTestDefinitions AptitudeTestDefinition[]
+  batches                 Batch[]
+  hackathonPostings       HackathonPosting[]
+  internshipPostings      InternshipPosting[]
+  jobPostings             JobPosting[]
+  machineTestProblems     MachineTestProblem[]
+  users                   User[]
+  mockDrives              MockDrive[]
+
+  @@index([domain])
+  @@map("institutions")
+}
+
+model Batch {
+  id            Int         @id @default(autoincrement())
+  name          String
+  institutionId Int
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@unique([institutionId, name])
+  @@map("batches")
+}
+
+model Resume {
+  id                  Int                  @id @default(autoincrement())
+  userId              String
+  title               String
+  filename            String?
+  storagePath         String
+  content             String?
+  analysisStatus      ResumeAnalysisStatus @default(PENDING)
+  isPrimary           Boolean              @default(false)
+  uploadedAt          DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  aiInterviewSessions AiInterviewSession[]
+  analysis            ResumeAnalysis?
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, title])
+  @@index([userId, isPrimary, analysisStatus])
+  @@map("resumes")
+}
+
+model ResumeAnalysis {
+  id              Int      @id @default(autoincrement())
+  resumeId        Int      @unique
+  atsScore        Decimal  @db.Decimal(5, 2)
+  keywordsFound   String[]
+  keywordsMissing String[]
+  formatScore     Decimal  @db.Decimal(5, 2)
+  suggestions     String[]
+  analysisDate    DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  resume          Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@map("resume_analysis")
+}
+
+model AptitudeTestDefinition {
+  id            Int                              @id @default(autoincrement())
+  name          String
+  description   String?
+  institutionId Int
+  questions     AptitudeTestDefinitionQuestion[]
+  institution   Institution                      @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  mockDrives    MockDrive[]
+
+  @@unique([name, institutionId])
+  @@map("aptitude_test_definitions")
+}
+
+model AptitudeQuestion {
+  id                        Int                              @id @default(autoincrement())
+  sourceQuestionId          Int                              @unique
+  question                  String
+  options                   Json
+  correctAnswer             String
+  difficulty                QuestionDifficulty
+  createdAt                 DateTime                         @default(now())
+  updatedAt                 DateTime                         @updatedAt
+  tests                     AptitudeTestDefinitionQuestion[]
+  tags                      Tag[]                            @relation("AptitudeQuestionTags")
+  MockDriveAptitudeQuestion MockDriveAptitudeQuestion[]
+
+  @@index([difficulty])
+  @@map("aptitude_questions")
+}
+
+model AptitudeTestDefinitionQuestion {
+  testDefinitionId Int
+  questionId       Int
+  question         AptitudeQuestion       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  testDefinition   AptitudeTestDefinition @relation(fields: [testDefinitionId], references: [id], onDelete: Cascade)
+
+  @@id([testDefinitionId, questionId])
+  @@map("aptitude_test_definition_questions")
+}
+
+model AptitudeResponse {
+  id               Int               @id @default(autoincrement())
+  userId           String?
+  type             String
+  answers          Json
+  score            Int
+  total            Int
+  percentage       Decimal           @db.Decimal(5, 2)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  user             User?             @relation(fields: [userId], references: [id])
+  mockDriveAttempt MockDriveAttempt?
+
+  @@index([userId, type, percentage])
+  @@map("aptitude_responses")
+}
+
+model MachineTestProblem {
+  id                         Int                          @id @default(autoincrement())
+  title                      String
+  description                Json
+  difficulty                 QuestionDifficulty
+  testCases                  Json
+  institutionId              Int?
+  isPublic                   Boolean                      @default(false)
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @updatedAt
+  practiceTests              MachineTestProblemLink[]
+  tags                       MachineTestProblemTag[]
+  institution                Institution?                 @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  practiceSubmissions        MachineTestSubmission[]
+  mockDriveProblems          MockDriveMachineProblem[]
+  generatedFromMockDrive     MockDriveGeneratedProblem[]  @relation("GeneratedToPublic")
+
+  @@index([difficulty, isPublic, institutionId])
+  @@map("machine_test_problems")
+}
+
+model MachineTest {
+  id               Int                      @id @default(autoincrement())
+  userId           String
+  difficulty       QuestionDifficulty
+  status           MachineTestStatus        @default(STARTED)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  completedAt      DateTime?
+  problems         MachineTestProblemLink[]
+  submissions      MachineTestSubmission[]
+  user             User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mockDriveAttempt MockDriveAttempt?
+
+  @@index([userId, status, difficulty])
+  @@map("machine_tests")
+}
+
+model MachineTestProblemLink {
+  id            Int                @id @default(autoincrement())
+  machineTestId Int
+  problemId     Int
+  machineTest   MachineTest        @relation(fields: [machineTestId], references: [id], onDelete: Cascade)
+  problem       MachineTestProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([machineTestId, problemId])
+  @@map("machine_test_problem_links")
+}
+
+model MachineTestSubmission {
+  id             Int                 @id @default(autoincrement())
+  userId         String?
+  problemId      Int
+  machineTestId  Int?
+  sourceCode     String
+  languageId     Int
+  stdin          String?
+  judge0Response Json
+  status         SubmissionStatus
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  language       ProgrammingLanguage @relation(fields: [languageId], references: [id])
+  machineTest    MachineTest?        @relation(fields: [machineTestId], references: [id])
+  problem        MachineTestProblem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  user           User?               @relation(fields: [userId], references: [id])
+
+  @@index([userId, status, createdAt])
+  @@index([problemId, status])
+  @@map("machine_test_submissions")
+}
+
+model ProgrammingLanguage {
+  id                     Int                     @id @default(autoincrement())
+  name                   String                  @unique
+  judge0Id               Int?                    @unique
+  version                String?
+  isSupported            Boolean                 @default(true)
+  machineTestSubmissions MachineTestSubmission[]
+
+  @@index([isSupported])
+  @@index([judge0Id])
+  @@map("programming_languages")
+}
+
+model Tag {
+  id                       Int                     @id @default(autoincrement())
+  name                     String
+  category                 TagCategory
+  parentId                 Int?
+  machineTestProblems      MachineTestProblemTag[]
+  parent                   Tag?                    @relation("TagHierarchy", fields: [parentId], references: [id])
+  children                 Tag[]                   @relation("TagHierarchy")
+  performanceRecords       UserTopicPerformance[]
+  profileAptitudeQuestions AptitudeQuestion[]      @relation("AptitudeQuestionTags")
+  profilesWithSkill        Profile[]               @relation("ProfileSkills")
+
+  @@unique([name, category])
+  @@index([category, parentId])
+  @@map("tags")
+}
+
+model MachineTestProblemTag {
+  problemId Int
+  tagId     Int
+  problem   MachineTestProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  tag       Tag                @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, tagId])
+  @@map("machine_test_problem_tags")
+}
+
+model UserTopicPerformance {
+  userId        String
+  tagId         Int
+  averageScore  Decimal  @db.Decimal(5, 2)
+  accuracy      Decimal  @db.Decimal(5, 2)
+  totalAttempts Int
+  updatedAt     DateTime @updatedAt
+  tag           Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tagId])
+  @@index([averageScore, accuracy])
+  @@map("user_topic_performance")
+}
+
+model JobPosting {
+  id                  Int              @id @default(autoincrement())
+  title               String
+  description         String
+  eligibilityCriteria Json?
+  location            String?
+  salary              String?
+  applicationDeadline DateTime?
+  institutionId       Int
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  applications        JobApplication[]
+  institution         Institution      @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId, applicationDeadline])
+  @@map("job_postings")
+}
+
+model JobApplication {
+  id        Int               @id @default(autoincrement())
+  userId    String
+  jobId     Int
+  resumeId  Int?
+  status    ApplicationStatus @default(PENDING)
+  appliedAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  job       JobPosting        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+  @@index([status, appliedAt])
+  @@map("job_applications")
+}
+
+model InternshipPosting {
+  id                  Int                     @id @default(autoincrement())
+  title               String
+  description         String
+  eligibilityCriteria Json?
+  location            String?
+  stipend             String?
+  duration            String?
+  applicationDeadline DateTime?
+  institutionId       Int
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  applications        InternshipApplication[]
+  institution         Institution             @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId, applicationDeadline])
+  @@map("internship_postings")
+}
+
+model InternshipApplication {
+  id           Int               @id @default(autoincrement())
+  userId       String
+  internshipId Int
+  resumeId     Int?
+  status       ApplicationStatus @default(PENDING)
+  appliedAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  internship   InternshipPosting @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, internshipId])
+  @@index([status, appliedAt])
+  @@map("internship_applications")
+}
+
+model HackathonPosting {
+  id                   Int                     @id @default(autoincrement())
+  title                String
+  description          String
+  eligibilityCriteria  Json?
+  location             String?
+  startDate            DateTime?
+  endDate              DateTime?
+  prizes               String?
+  registrationDeadline DateTime?
+  institutionId        Int
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  institution          Institution             @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  registrations        HackathonRegistration[]
+
+  @@index([institutionId, registrationDeadline])
+  @@map("hackathon_postings")
+}
+
+model HackathonRegistration {
+  id           Int               @id @default(autoincrement())
+  userId       String
+  hackathonId  Int
+  teamName     String?
+  status       ApplicationStatus @default(PENDING)
+  registeredAt DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  hackathon    HackathonPosting  @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hackathonId])
+  @@index([status, registeredAt])
+  @@map("hackathon_registrations")
+}
+
+model AiInterviewSession {
+  id                   String                   @id @default(cuid())
+  userId               String
+  resumeId             Int?
+  jobTitle             String?
+  companyName          String?
+  status               AiInterviewSessionStatus @default(STARTED)
+  currentQuestionIndex Int                      @default(0)
+  totalQuestions       Int                      @default(10)
+  questions            Json
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  completedAt          DateTime?
+  feedback             AiInterviewFeedback?
+  responses            AiInterviewResponse[]
+  resume               Resume?                  @relation(fields: [resumeId], references: [id], onDelete: Restrict)
+  user                 User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mockDriveAttempt     MockDriveAttempt?
+
+  @@index([userId, status])
+  @@map("ai_interview_sessions")
+}
+
+model AiInterviewResponse {
+  id               String                      @id @default(cuid())
+  sessionId        String
+  category         AiInterviewQuestionCategory
+  question         String
+  answer           String
+  isFollowup       Boolean                     @default(false)
+  scoresJson       Json?
+  feedbackText     String?
+  timeTakenSeconds Int?
+  timestamp        DateTime                    @default(now())
+  session          AiInterviewSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, timestamp])
+  @@map("ai_interview_responses")
+}
+
+model AiInterviewFeedback {
+  id                  String             @id @default(cuid())
+  sessionId           String             @unique
+  userId              String
+  overallScore        Decimal            @db.Decimal(5, 2)
+  overallSummary      String
+  keyStrengths        String[]
+  areasForImprovement String[]
+  feedbackJson        Json
+  createdAt           DateTime           @default(now())
+  session             AiInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("ai_interview_feedback")
+}
+
+model MockDrive {
+  id                          String                        @id @default(cuid())
+  title                       String
+  description                 String?
+  institutionId               Int
+  eligibleYear                Int[]
+  eligibilityCriteria         Json?
+  aptitudeTestId              Int?
+  machineTestProblems         MockDriveMachineProblem[]
+  aiInterviewConfig           Json?
+  registrationStartDate       DateTime
+  registrationEndDate         DateTime
+  driveStartDate              DateTime
+  driveEndDate                DateTime
+  duration                    Int
+  isPublished                 Boolean                       @default(false)
+  rankingsPublished           Boolean                       @default(false)
+  status                      MockDriveStatus               @default(DRAFT)
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @updatedAt
+  createdBy                   String
+  generatedAptitudeQuestions  Json?
+  institution                 Institution                   @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  aptitudeTest                AptitudeTestDefinition?       @relation(fields: [aptitudeTestId], references: [id], onDelete: SetNull)
+  registrations               MockDriveRegistration[]
+  batches                     MockDriveBatch[]
+  attempts                    MockDriveAttempt[]
+  results                     MockDriveResult[]
+  rankings                    MockDriveRanking[]
+  MockDriveAptitudeQuestion   MockDriveAptitudeQuestion[]
+  generatedProblems           MockDriveGeneratedProblem[]
+
+  @@index([institutionId, status, isPublished])
+  @@index([driveStartDate, driveEndDate])
+  @@map("mock_drives")
+}
+
+model MockDriveMachineProblem {
+  id          Int    @id @default(autoincrement())
+  mockDriveId String
+  problemId   Int
+  orderIndex  Int    @default(0)
+  points      Int    @default(100)
+
+  mockDrive MockDrive          @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  problem   MachineTestProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([mockDriveId, problemId])
+  @@index([mockDriveId, orderIndex])
+  @@map("mock_drive_machine_problems")
+}
+
+model MockDriveGeneratedProblem {
+  id                  String                       @id @default(cuid())
+  mockDriveId         String
+  title               String
+  description         Json
+  difficulty          QuestionDifficulty
+  topic               String
+  hints               String[]
+  testCases           Json
+  orderIndex          Int                          @default(0)
+  points              Int                          @default(100)
+  totalAttempts       Int                          @default(0)
+  solvedCount         Int                          @default(0)
+  partialSolveCount   Int                          @default(0)
+  failedCount         Int                          @default(0)
+  testCaseMetrics     Json?
+  averageDifficulty   Decimal?                     @db.Decimal(3, 2)
+  clarityScore        Decimal?                     @db.Decimal(3, 2)
+  isMigrated          Boolean                      @default(false)
+  migratedToId        Int?
+  migrationNotes      String?
+  isTestCaseValidated Boolean                      @default(false)
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+  mockDrive           MockDrive                    @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  migratedProblem     MachineTestProblem?          @relation("GeneratedToPublic", fields: [migratedToId], references: [id])
+  submissions         MockDriveProblemSubmission[]
+
+  @@index([mockDriveId])
+  @@index([isMigrated, isTestCaseValidated])
+  @@map("mock_drive_generated_problems")
+}
+
+model MockDriveProblemSubmission {
+  id                 String                    @id @default(cuid())
+  generatedProblemId String
+  userId             String
+  attemptId          String
+  sourceCode         String
+  languageId         Int
+  testCaseResults    Json
+  status             SubmissionStatus
+  timeTakenSeconds   Int?
+  createdAt          DateTime                  @default(now())
+  generatedProblem   MockDriveGeneratedProblem @relation(fields: [generatedProblemId], references: [id], onDelete: Cascade)
+  user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempt            MockDriveAttempt          @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([generatedProblemId, userId])
+  @@index([attemptId])
+  @@map("mock_drive_problem_submissions")
+}
+
+model MockDriveRegistration {
+  id           String                      @id @default(cuid())
+  mockDriveId  String
+  userId       String
+  registeredAt DateTime                    @default(now())
+  status       MockDriveRegistrationStatus @default(REGISTERED)
+
+  mockDrive    MockDrive              @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batchStudent MockDriveBatchStudent?
+
+  @@unique([mockDriveId, userId])
+  @@index([mockDriveId, status])
+  @@index([userId, status])
+  @@map("mock_drive_registrations")
+}
+
+model MockDriveBatch {
+  id          String   @id @default(cuid())
+  mockDriveId String
+  batchName   String
+  startTime   DateTime
+  endTime     DateTime
+  maxStudents Int?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  mockDrive MockDrive               @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  students  MockDriveBatchStudent[]
+
+  @@unique([mockDriveId, batchName])
+  @@index([mockDriveId, startTime, endTime])
+  @@map("mock_drive_batches")
+}
+
+model MockDriveBatchStudent {
+  id             String   @id @default(cuid())
+  batchId        String
+  registrationId String   @unique
+  addedAt        DateTime @default(now())
+
+  batch        MockDriveBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  registration MockDriveRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, registrationId])
+  @@index([batchId])
+  @@map("mock_drive_batch_students")
+}
+
+model MockDriveAttempt {
+  id                   String                       @id @default(cuid())
+  mockDriveId          String
+  userId               String
+  batchId              String?
+  startedAt            DateTime                     @default(now())
+  completedAt          DateTime?
+  status               MockDriveAttemptStatus       @default(IN_PROGRESS)
+  aptitudeResponseId   Int?                         @unique
+  machineTestId        Int?                         @unique
+  aiInterviewSessionId String?                      @unique
+  mockDrive            MockDrive                   @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  user                 User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aptitudeResponse     AptitudeResponse?            @relation(fields: [aptitudeResponseId], references: [id], onDelete: SetNull)
+  machineTest          MachineTest?                 @relation(fields: [machineTestId], references: [id], onDelete: SetNull)
+  aiInterviewSession   AiInterviewSession?          @relation(fields: [aiInterviewSessionId], references: [id], onDelete: SetNull)
+  result               MockDriveResult?
+  problemSubmissions   MockDriveProblemSubmission[]
+
+  @@unique([mockDriveId, userId])
+  @@index([mockDriveId, status])
+  @@index([userId, status])
+  @@map("mock_drive_attempts")
+}
+
+model MockDriveResult {
+  id                  String   @id @default(cuid())
+  attemptId           String   @unique
+  mockDriveId         String
+  userId              String
+  aptitudeScore       Decimal? @db.Decimal(5, 2)
+  aptitudeMaxScore    Decimal? @db.Decimal(5, 2)
+  machineTestScore    Decimal? @db.Decimal(5, 2)
+  machineTestMaxScore Decimal? @db.Decimal(5, 2)
+  aiInterviewScore    Decimal? @db.Decimal(5, 2)
+  aiInterviewMaxScore Decimal? @db.Decimal(5, 2)
+  totalScore          Decimal  @db.Decimal(5, 2)
+  totalMaxScore       Decimal  @db.Decimal(5, 2)
+  percentage          Decimal  @db.Decimal(5, 2)
+  detailedReport      Json?
+  strengths           String[]
+  areasForImprovement String[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  attempt             MockDriveAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  mockDrive           MockDrive         @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ranking             MockDriveRanking?
+
+  @@index([mockDriveId, totalScore])
+  @@index([userId])
+  @@map("mock_drive_results")
+}
+
+model MockDriveRanking {
+  id          String   @id @default(cuid())
+  mockDriveId String
+  resultId    String   @unique
+  userId      String
+  rank        Int
+  percentile  Decimal  @db.Decimal(5, 2)
+  publishedAt DateTime @default(now())
+
+  mockDrive MockDrive       @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  result    MockDriveResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([mockDriveId, userId])
+  @@unique([mockDriveId, rank])
+  @@index([mockDriveId, rank])
+  @@index([userId])
+  @@map("mock_drive_rankings")
+}
+
+model MockDriveAptitudeQuestion {
+  id            String             @id @default(cuid())
+  mockDriveId   String
+  question      String
+  options       Json
+  correctAnswer String
+  difficulty    QuestionDifficulty
+  topic         String
+  explanation   String?
+  attemptCount  Int                @default(0)
+  correctCount  Int                @default(0)
+  successRate   Decimal?           @db.Decimal(5, 2)
+  isMigrated    Boolean            @default(false)
+  migratedToId  Int?
+  migrationNotes String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  mockDrive     MockDrive          @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  migratedQuestion AptitudeQuestion? @relation(fields: [migratedToId], references: [id])
+
+  @@index([mockDriveId])
+  @@index([isMigrated])
+  @@map("mock_drive_aptitude_questions")
+}
+
+// Enums
+enum Role {
+  STUDENT
+  INSTITUTION_ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+  PENDING_PROFILE_COMPLETION
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum MachineTestStatus {
+  STARTED
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum SubmissionStatus {
+  PENDING
+  PASS
+  FAIL
+  PARTIAL
+  COMPILE_ERROR
+  RUNTIME_ERROR
+  TIMEOUT
+  QUEUED
+}
+
+enum TagCategory {
+  COMPANY
+  SKILL
+  LANGUAGE
+  TECHNOLOGY
+  FRAMEWORK
+  APTITUDE_TOPIC
+  CODING_TOPIC
+  OTHER
+}
+
+enum ResumeAnalysisStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AiInterviewSessionStatus {
+  STARTED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum AiInterviewQuestionCategory {
+  INTRODUCTORY
+  TECHNICAL
+  PROJECT_BASED
+  BEHAVIORAL
+  SITUATIONAL
+  CLOSING
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  SHORTLISTED
+  REJECTED
+  ACCEPTED
+}
+
+enum MockDriveStatus {
+  DRAFT
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum MockDriveRegistrationStatus {
+  REGISTERED
+  BATCH_ASSIGNED
+  CANCELLED
+  DISQUALIFIED
+}
+
+enum MockDriveAttemptStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+  DISQUALIFIED
+}

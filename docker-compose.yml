@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    container_name: placementprep-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Prathamesh@1407
+      POSTGRES_DB: placementprep
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - placement_network
+
+  redis:
+    image: redis:7
+    container_name: placementprep-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - placement_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  placement_network:
+    driver: bridge

@@ -1,0 +1,80 @@
+// src/types/enum.ts
+
+export enum Role {
+  STUDENT = 'STUDENT',
+  INSTITUTION_ADMIN = 'INSTITUTION_ADMIN',
+  SUPER_ADMIN = 'SUPER_ADMIN',
+}
+
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  DELETED = 'DELETED',
+  PENDING_PROFILE_COMPLETION = 'PENDING_PROFILE_COMPLETION',
+}
+
+export enum QuestionDifficulty {
+  EASY = 'EASY',
+  MEDIUM = 'MEDIUM',
+  HARD = 'HARD',
+}
+
+export enum MachineTestStatus {
+  STARTED = 'STARTED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  ABANDONED = 'ABANDONED',
+}
+
+export enum SubmissionStatus {
+  PENDING = 'PENDING',
+  PASS = 'PASS',
+  FAIL = 'FAIL',
+  PARTIAL = 'PARTIAL',
+  COMPILE_ERROR = 'COMPILE_ERROR',
+  RUNTIME_ERROR = 'RUNTIME_ERROR',
+  TIMEOUT = 'TIMEOUT',
+  QUEUED = 'QUEUED',
+}
+
+export enum ResumeAnalysisStatus {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+}
+
+export enum AiInterviewSessionStatus {
+  STARTED = 'STARTED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+}
+
+export enum AiInterviewQuestionCategory {
+  INTRODUCTORY = 'INTRODUCTORY',
+  TECHNICAL = 'TECHNICAL',
+  PROJECT_BASED = 'PROJECT_BASED',
+  BEHAVIORAL = 'BEHAVIORAL',
+  SITUATIONAL = 'SITUATIONAL',
+  CLOSING = 'CLOSING',
+}
+
+export enum ApplicationStatus {
+  PENDING = 'PENDING',
+  REVIEWED = 'REVIEWED',
+  SHORTLISTED = 'SHORTLISTED',
+  REJECTED = 'REJECTED',
+  ACCEPTED = 'ACCEPTED',
+}
+
+export enum TagCategory {
+  COMPANY = 'COMPANY',
+  SKILL = 'SKILL',
+  LANGUAGE = 'LANGUAGE',
+  TECHNOLOGY = 'TECHNOLOGY',
+  FRAMEWORK = 'FRAMEWORK',
+  APTITUDE_TOPIC = 'APTITUDE_TOPIC',
+  CODING_TOPIC = 'CODING_TOPIC',
+  OTHER = 'OTHER',
+}
