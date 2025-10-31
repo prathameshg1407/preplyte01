@@ -1,4 +1,4 @@
-import { fetchWithAuthServer } from './server';
+import { serverGet } from './server'; // <-- Updated import from fetchWithAuthServer to serverGet
 import { 
   GetRandomQuestionsParams, 
   AptitudeQuestion
@@ -14,5 +14,8 @@ export const getRandomAptitudeQuestionsServer = async (
     query.append('difficulty', params.difficulty);
   }
   const endpoint = `/aptitude/random/${count}?${query.toString()}`;
-  return fetchWithAuthServer<AptitudeQuestion[]>(endpoint, { method: 'GET' });
+  
+  // Changed the call to use serverGet, which handles GET requests 
+  // and automatically includes server-side authentication (cookies).
+  return serverGet<AptitudeQuestion[]>(endpoint); 
 };
